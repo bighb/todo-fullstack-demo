@@ -317,9 +317,175 @@ Spring Boot 应用通常采用分层架构，每层有明确的职责：
 
 ---
 
-## 五、开发流程
+## 五、配置安全与环境管理
 
-### 5.1 环境准备
+### 5.1 application.properties 简介
+
+**application.properties** 是 Spring Boot 的核心配置文件，位于 `src/main/resources` 目录下。
+
+**主要用途**：
+- 数据库连接配置
+- 服务器端口设置
+- 日志级别配置
+- 第三方服务密钥
+- 应用自定义参数
+
+**配置格式**：
+- `.properties` 格式：`key=value`
+- `.yaml/.yml` 格式：层级结构，更易读
+
+### 5.2 敏感信息的安全风险
+
+**常见的敏感信息**：
+- 数据库密码
+- API 密钥（第三方服务）
+- JWT 签名密钥
+- OAuth 客户端密钥
+- 云服务凭证（AWS、阿里云等）
+
+**直接写入配置文件的风险**：
+- 代码提交到 Git 仓库后，密码会被永久记录在历史中
+- 公开仓库会导致密码泄露
+- 即使是私有仓库，团队成员也能看到所有密码
+- 不同环境（开发/测试/生产）需要不同的密码
+
+**安全原则**：永远不要将明文密码提交到版本控制系统。
+
+### 5.3 环境变量配置（推荐方案）
+
+**基本语法**：
+```
+${环境变量名}           # 必须设置，否则启动失败
+${环境变量名:默认值}    # 未设置时使用默认值
+```
+
+**示例配置**：
+```properties
+spring.datasource.username=${DB_USERNAME:root}
+spring.datasource.password=${DB_PASSWORD}
+```
+
+**设置环境变量的方式**：
+
+**macOS/Linux**：
+```bash
+# 临时设置（当前终端有效）
+export DB_PASSWORD=your_password
+
+# 永久设置（添加到 ~/.zshrc 或 ~/.bashrc）
+echo 'export DB_PASSWORD=your_password' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**Windows**：
+```cmd
+# 临时设置
+set DB_PASSWORD=your_password
+
+# 永久设置（通过系统环境变量设置）
+```
+
+**IDE 中配置**：
+- VS Code：在 launch.json 中添加 env 配置
+- IntelliJ IDEA：Run Configuration → Environment variables
+
+### 5.4 Spring Profiles 多环境配置
+
+**Profiles 机制**允许为不同环境定义不同的配置。
+
+**配置文件命名**：
+- `application.properties` - 通用配置
+- `application-dev.properties` - 开发环境
+- `application-test.properties` - 测试环境
+- `application-prod.properties` - 生产环境
+
+**激活 Profile**：
+```bash
+# 命令行参数
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+
+# 环境变量
+export SPRING_PROFILES_ACTIVE=dev
+
+# 在 application.properties 中指定
+spring.profiles.active=dev
+```
+
+**配置继承**：
+- 特定 Profile 的配置会覆盖通用配置
+- 可以同时激活多个 Profile
+
+### 5.5 .gitignore 配置
+
+**应该忽略的文件**：
+```gitignore
+# 包含敏感信息的配置
+application-local.properties
+application-dev.properties
+.env
+.env.local
+
+# IDE 配置
+.idea/
+.vscode/
+
+# 构建产物
+target/
+node_modules/
+```
+
+**配置模板文件**：
+- 提交 `application.properties.example` 作为模板
+- 说明需要配置的环境变量
+- 其他开发者复制模板并填入自己的配置
+
+### 5.6 生产环境安全方案
+
+**方案一：密钥管理服务**
+- HashiCorp Vault
+- AWS Secrets Manager
+- Azure Key Vault
+- 阿里云密钥管理服务
+
+**方案二：Spring Cloud Config**
+- 集中式配置管理
+- 配置加密存储
+- 动态刷新配置
+
+**方案三：Kubernetes Secrets**
+- 容器化部署时使用
+- Secret 挂载为环境变量或文件
+
+**方案四：配置加密**
+- Jasypt 加密配置值
+- Spring Cloud Config 加密
+
+### 5.7 本项目的配置方式
+
+本项目采用**环境变量**方式管理敏感信息：
+
+**必须设置的环境变量**：
+- `DB_PASSWORD`：数据库密码
+
+**可选环境变量（有默认值）**：
+- `DB_NAME`：数据库名称（默认：todo_db）
+- `DB_USERNAME`：数据库用户名（默认：root）
+
+**启动项目**：
+```bash
+# 设置环境变量
+export DB_PASSWORD=your_password
+
+# 启动应用
+cd backend
+mvn spring-boot:run
+```
+
+---
+
+## 六、开发流程
+
+### 6.1 环境准备
 
 **第一步：验证开发环境**
 
@@ -343,7 +509,7 @@ Spring Boot 应用通常采用分层架构，每层有明确的职责：
 2. 设置正确的用户名和密码
 3. 确认端口号没有冲突
 
-### 5.2 后端开发顺序
+### 6.2 后端开发顺序
 
 按照以下顺序开发后端功能，这是 Spring Boot 项目的标准开发流程：
 
@@ -386,7 +552,7 @@ API 接口层：
 - 验证数据库数据变化
 - 测试异常情况的处理
 
-### 5.3 前端开发顺序（简略）
+### 6.3 前端开发顺序（简略）
 
 前端开发相对简单，主要步骤：
 
@@ -395,7 +561,7 @@ API 接口层：
 3. **状态管理**：使用 React Hooks 管理数据
 4. **样式美化**：添加 CSS 样式
 
-### 5.4 联调测试
+### 6.4 联调测试
 
 **启动顺序**：
 1. 先启动 MySQL 数据库
@@ -411,46 +577,46 @@ API 接口层：
 
 ---
 
-## 六、进阶学习路径
+## 七、进阶学习路径
 
 完成基础项目后，建议按以下路径深入学习：
 
-### 6.1 异常处理
+### 7.1 异常处理
 
 **全局异常处理**：
 - 使用 `@ControllerAdvice` 统一处理异常
 - 自定义业务异常类
 - 返回标准错误响应格式
 
-### 6.2 参数校验
+### 7.2 参数校验
 
 **Bean Validation**：
 - 使用 `@Valid` 触发校验
 - 常用校验注解：`@NotNull`、`@Size`、`@Email` 等
 - 自定义校验注解
 
-### 6.3 DTO 模式
+### 7.3 DTO 模式
 
 **数据传输对象（DTO）**：
 - 分离内部实体和外部接口
 - 控制数据暴露范围
 - 支持不同场景的数据转换
 
-### 6.4 日志记录
+### 7.4 日志记录
 
 **SLF4J + Logback**：
 - 日志级别：TRACE、DEBUG、INFO、WARN、ERROR
 - 日志格式配置
 - 日志文件输出
 
-### 6.5 安全认证
+### 7.5 安全认证
 
 **Spring Security**：
 - 用户认证和授权
 - JWT Token 机制
 - 密码加密存储
 
-### 6.6 单元测试
+### 7.6 单元测试
 
 **JUnit 5 + Mockito**：
 - Repository 层测试
@@ -459,9 +625,9 @@ API 接口层：
 
 ---
 
-## 七、常见问题排查
+## 八、常见问题排查
 
-### 7.1 后端启动问题
+### 8.1 后端启动问题
 
 **数据库连接失败**：
 - 检查 MySQL 服务是否运行
@@ -476,7 +642,7 @@ API 接口层：
 - 检查网络连接
 - 配置 Maven 镜像源（阿里云等）
 
-### 7.2 API 测试问题
+### 8.2 API 测试问题
 
 **404 Not Found**：
 - 检查请求路径是否正确
@@ -486,7 +652,7 @@ API 接口层：
 - 查看控制台错误日志
 - 检查数据库查询是否正确
 
-### 7.3 前后端联调问题
+### 8.3 前后端联调问题
 
 **CORS 错误**：
 - 检查 @CrossOrigin 注解配置
@@ -498,7 +664,7 @@ API 接口层：
 
 ---
 
-## 八、学习资源推荐
+## 九、学习资源推荐
 
 ### 官方文档
 - Spring Boot 官方文档

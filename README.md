@@ -23,9 +23,21 @@
 CREATE DATABASE todo_db CHARACTER SET utf8mb4;
 ```
 
-### 2. 配置数据库连接
+### 2. 配置环境变量
 
-编辑 `backend/src/main/resources/application.properties`，修改数据库密码。
+项目使用环境变量管理敏感信息，启动前需设置：
+
+```bash
+# macOS/Linux
+export DB_PASSWORD=your_password
+
+# Windows
+set DB_PASSWORD=your_password
+```
+
+可选环境变量（有默认值）：
+- `DB_NAME` - 数据库名（默认：todo_db）
+- `DB_USERNAME` - 用户名（默认：root）
 
 ### 3. 启动后端
 
@@ -33,6 +45,8 @@ CREATE DATABASE todo_db CHARACTER SET utf8mb4;
 cd backend
 mvn spring-boot:run
 ```
+
+> 查看 `application.properties.example` 了解更多配置方式
 
 ### 4. 启动前端
 
