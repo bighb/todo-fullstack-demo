@@ -1,0 +1,53 @@
+# ===========================================
+# Todo Backend Systemd Service
+# ===========================================
+# 使用方法：
+# 1. 将此文件复制到 /etc/systemd/system/todo-backend.service
+# 2. 修改环境变量配置
+# 3. sudo systemctl daemon-reload
+# 4. sudo systemctl enable todo-backend
+# 5. sudo systemctl start todo-backend
+
+[Unit]
+Description=Todo List Spring Boot Application
+Documentation=https://github.com/your-repo/todo-fullstack-demo
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/todo-app/backend
+
+# Java 应用配置
+ExecStart=/usr/bin/java -jar /var/www/todo-app/backend/todo.jar
+
+# 环境变量
+Environment=JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+Environment=DB_HOST=localhost
+Environment=DB_PORT=3306
+Environment=DB_NAME=todo_db
+Environment=DB_USERNAME=todo_user
+Environment=DB_PASSWORD=your_secure_password
+
+# 或者使用环境变量文件
+# EnvironmentFile=/etc/todo-app/backend.env
+
+# 进程管理
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=todo-backend
+
+# 资源限制
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# 安全配置
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
