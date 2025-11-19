@@ -9,6 +9,8 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // 开发环境下此 useEffect 会执行两次，导致 /api/todos 被请求两次
+  // 原因：StrictMode 的双重挂载机制，详见 main.jsx
   useEffect(() => {
     fetchTodos();
   }, []);
